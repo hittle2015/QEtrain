@@ -9,12 +9,25 @@ import sys
 import logging
 import numpy as np
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# create a file handler
+handler = logging.FileHandler('./QEtrain.log')
+handler.setLevel(logging.INFO)
+
+# create a logging format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# add the handlers to the logger
+logger.addHandler(handler)
 use_cuda = torch.cuda.is_available()
 
 if use_cuda:
-    print "use cuda"
+	logger.info("use cuda")
 else:
-    print "use CPU"
+	logger.info("use CPU")
 #logger = logging.getLogger(__name__)
 
 class EncoderCNNRNN(nn.Module):
@@ -26,8 +39,8 @@ class EncoderCNNRNN(nn.Module):
 		self.embedding = nn.Embedding(vocab_size, emb_size)
 		if pretrained_embs is not None:
 			self.embedding.weight.data.copy_(torch.from_numpy(pretrained_embs))
-		self.conv = nn.ModuleList([ nn.Conv1d(emb_size, feature_size, 2*sz+1, padding = sz) for sz in window_size])
-		self.gru = nn.GRU(feature_size*len(window_size), hidden_size, n_layers, batch_first = True)
+			self.conv = nn.ModuleList([ nn.Conv1d(emb_size, feature_size, 2*sz+1, padding = sz) for sz in window_size])
+			self.gru = nn.GRU(feature_size*len(window_size), hidden_size, n_layers, batch_first = True)
 
 	def forward(self, input, batch_size):
 		embedded = self.embedding(input).permute(0, 2, 1) # batch_size x seq_len x emb_size =>  batch_size x emb_size x seq_len
@@ -107,12 +120,12 @@ def train(model, vocab, args):
 
 	lowest_loss = 987654321.0
 	for epoch in range(args.epochs):
-                model.train()
+		model.train()
 		for input, target, score in data_loader.get_batches(args.batch_size):
 			loss = train_minibatch(input, target, score, model, optimizer, criterion)
 			sys.stdout.write('train loss: %.3f\r\r'%loss)
 			sys.stdout.flush()
-                model.eval()
+				model.eval()
 		result = test(model, vocab, args)
 		print ('Epoch %d finished'%(epoch+1))
 		print (result)
@@ -137,10 +150,10 @@ def test(model, vocab, args):
 		golden = Variable(torch.FloatTensor(score))
 		preds = model(input, target, batch_size)
 		for i, (pred, max_score) in enumerate(zip(preds, [35, 25, 25, 15])):
-                        #print pred - golden[:,i]
+			#print pred - golden[:,i]
 			loss[i] += batch_size * criterion(pred*max_score, golden[:, i]).data[0]
 			tot_size += batch_size
-        result = [ l/tot_size for l in loss ]
+	result = [ l/tot_size for l in loss ]
 	return result
 
 
@@ -293,6 +306,6 @@ if __name__ == "__main__":
 	argparser.add_argument('--batch_size', type = int, default= 512)
 	argparser.add_argument('--src_emb', type=str, default= '/home/yuyuan/quality_estimation/glove.6B.200d.txt')
 	argparser.add_argument('--tgt_emb', type=str, default= '/home/yuyuan/quality_estimation/wikizhword.emb')
-        argparser.add_argument('--save_path', type=str, default= './translation_quality.pt')
+	argparser.add_argument('--save_path', type=str, default= './translation_quality.pt')
 	args, extra_args = argparser.parse_known_args()
 	main(args)
