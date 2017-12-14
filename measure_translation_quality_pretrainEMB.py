@@ -79,8 +79,8 @@ class AttentionRegression(nn.Module):
 		output_s, repr_s = self.encoder_s(source, batch_size)
 		output_t, repr_t = self.encoder_t(target, batch_size)
 		
-		weight_s = self.attw_s(F.relu(self.s2att_s(output_s) + self.t2att_s(repr_t).view(batch_size,1,-1)))#batch_size x seq_len
-		weight_t = self.attw_t(F.relu(self.t2att_t(output_t) + self.s2att_s(repr_s).view(batch_size,1,-1)))#batch_size x seq_len
+		weight_s = F.softmax(self.attw_s(F.relu(self.s2att_s(output_s) + self.t2att_s(repr_t).view(batch_size,1,-1))), 1)#batch_size x seq_len
+		weight_t = F.softmax(self.attw_t(F.relu(self.t2att_t(output_t) + self.s2att_s(repr_s).view(batch_size,1,-1))), 1)#batch_size x seq_len
 
 		repr_s = torch.sum(weight_s * output_s, 1)
 		repr_t = torch.sum(weight_t * output_t, 1)
